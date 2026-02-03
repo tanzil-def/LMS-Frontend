@@ -1,4 +1,3 @@
-// src/pages/AllGenres/AllGenres.jsx
 import { useNavigate, useLocation } from "react-router-dom";
 import { useMemo, useState, useEffect } from "react";
 import Sidebar from "../../components/Sidebar/Sidebar";
@@ -17,28 +16,33 @@ export default function AllGenres() {
   const location = useLocation();
 
   const [allBooks, setAllBooks] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState(location.state?.filter || null);
 
-  // Pagination
   const PAGE_SIZE = 9;
   const [page, setPage] = useState(1);
 
-  // Fetch books from API
+  // Fetch categories & books
   useEffect(() => {
-    const fetchBooks = async () => {
+    const fetchData = async () => {
       setLoading(true);
       try {
-        const res = await api.get("/book/list"); // ✅ API call
-        setAllBooks(res.data || []);
+        const [catRes, bookRes] = await Promise.all([
+          api.get("/categories/list"),
+          api.get("/book/list"),
+        ]);
+        setCategories(catRes.data || []);
+        setAllBooks(bookRes.data || []);
       } catch (err) {
-        console.error("Failed to fetch books:", err);
+        console.error("Failed to fetch data:", err);
+        setCategories([]);
         setAllBooks([]);
       } finally {
         setLoading(false);
       }
     };
-    fetchBooks();
+    fetchData();
   }, []);
 
   // Update filter from location state
@@ -46,19 +50,12 @@ export default function AllGenres() {
     if (location.state?.filter !== undefined) setFilter(location.state.filter);
   }, [location.state]);
 
-  // Filtered books
+  // Filtered books by category_id
   const filtered = useMemo(() => {
     if (!filter) return allBooks;
     if (filter.type === "all") return allBooks;
     if (filter.type === "category") {
-      return allBooks.filter(
-        (b) => (b.category || "").toString() === (filter.value || "")
-      );
-    }
-    if (filter.type === "subcategory") {
-      return allBooks.filter(
-        (b) => (b.category || "").toString() === (filter.parent || "")
-      );
+      return allBooks.filter((b) => b.category_id === filter.value);
     }
     return allBooks;
   }, [filter, allBooks]);
@@ -81,12 +78,10 @@ export default function AllGenres() {
 
   return (
     <div className="flex min-h-screen bg-white">
-      {/* Sidebar */}
       <aside className="hidden md:block w-64 lg:w-72 flex-none md:sticky md:top-20">
-        <Sidebar onSelect={setFilter} />
+        <Sidebar categories={categories} onSelect={setFilter} />
       </aside>
 
-      {/* Book Grid */}
       <main className="flex-1 p-6">
         <h1 className="text-2xl font-bold mb-6">All Genres</h1>
 
@@ -122,7 +117,6 @@ export default function AllGenres() {
               <div className="p-4 text-sm text-gray-500">No books found.</div>
             )}
 
-            {/* Pagination */}
             {filtered.length > 0 && totalPages > 1 && (
               <div className="px-4 pb-4 flex items-center justify-between gap-2">
                 <button

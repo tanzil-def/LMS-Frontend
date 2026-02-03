@@ -3,12 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Calendar } from "lucide-react";
 import { format, addDays, differenceInCalendarDays } from "date-fns";
-
-// Mock API function
-const submitBorrowRequest = async (data) => {
-  console.log("Submitting borrow request:", data);
-  return new Promise((resolve) => setTimeout(resolve, 1500));
-};
+import api from "../../api";
 
 export default function FillUpForm() {
   const navigate = useNavigate();
@@ -33,8 +28,9 @@ export default function FillUpForm() {
   const handleReturnDateChange = (e) => {
     const selected = new Date(e.target.value);
     const diffDays = differenceInCalendarDays(selected, today);
-    if (diffDays < 0) {
-      alert("Return date cannot be in the past.");
+
+    if (diffDays < 1) {
+      alert("Return date cannot be today or in the past.");
       setReturnDate("");
       setBorrowingDays(0);
       return;
@@ -45,12 +41,14 @@ export default function FillUpForm() {
       setBorrowingDays(0);
       return;
     }
+
     setReturnDate(e.target.value);
     setBorrowingDays(diffDays);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!returnDate || borrowingDays === 0) {
       alert("Please select a valid return date within 14 days.");
       return;
@@ -59,19 +57,26 @@ export default function FillUpForm() {
     setIsSubmitting(true);
     try {
       const payload = {
+        user_id: 3,             
         book_id: bookData.id,
-        borrower_name: "User Name",
-        borrow_date: format(today, "yyyy-MM-dd"),
-        return_date: format(new Date(returnDate), "yyyy-MM-dd"),
-        duration_days: borrowingDays,
+        days: borrowingDays
       };
-      await submitBorrowRequest(payload);
-      alert(`Successfully requested to borrow "${bookData.title}" until ${returnDate}.`);
+
+      const response = await api.post("/borrow/create", payload);
+      console.log("Borrow response:", response.data);
+
+      alert(`Successfully requested to borrow "${bookData.title}" for ${borrowingDays} days.`);
       localStorage.removeItem('borrowNow');
       navigate(`/book/${bookData.id}`);
     } catch (err) {
-      console.error(err);
-      alert("Failed to submit borrow request.");
+      console.error(err.response || err);
+      if (err.response?.status === 422) {
+        alert("Invalid data. Please check your selection.");
+      } else if (err.response?.status === 401) {
+        alert("Unauthorized. Please login again.");
+      } else {
+        alert("Failed to submit borrow request.");
+      }
     } finally {
       setIsSubmitting(false);
     }

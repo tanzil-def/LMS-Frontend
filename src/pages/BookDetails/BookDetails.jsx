@@ -166,90 +166,88 @@ export default function BookDetails() {
   };
 
   const normalize = (b) =>
-    !b
-      ? null
-      : {
-          id: b.id,
-          title: b.title,
-          authors: b.authors || b.author || "Unknown",
-          coverImage: b.coverImage || b.cover || b.image,
-          rating: b.average_rating || b.rating || 0,
-          ratingCount: b.ratingCount || 0,
-          publisher: b.publisher ?? "—",
-          publishDate: b.publishDate ?? "",
-          category: b.category ?? "General",
-          pdfLink: b.pdf_file || b.pdfLink || "#",
-          status: b.status,
-          image: b.image,
-          summary: b.longSummary || b.summary || b.description || "",
-          summaryIntro: b.summaryIntro || b.summary_intro || null,
-          summaryTail: b.summaryTail || b.summary_tail || null,
-          authorPhoto:
-            b.authorPhoto ||
-            b.author_image ||
-            b.authorImage ||
-            "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=240&h=240&fit=crop",
-          authorFollowers: Number(b.authorFollowers || b.followers || 16),
-          authorBio: b.authorBio || b.author_bio || b.authorStory || "",
-          audioSrc: pickAudio(b), // ✅ This now returns correct URL without double "audio/"
-          copies_available: b.copies_available || 0,
-          copies_total: b.copies_total || 0,
-          format: b.format || "HARD_COPY",
-          created_at: b.created_at,
-          updated_at: b.updated_at,
-        };
+  !b
+    ? null
+    : {
+        id: b.id,
+        title: b.title,
+        authors: b.authors || b.author || "Unknown",
+        coverImage: b.coverImage || b.cover || b.image || "https://via.placeholder.com/400x600?text=No+Cover",
+        image: b.image || b.coverImage || b.cover || "https://via.placeholder.com/400x600?text=No+Image",
+        rating: b.average_rating || b.rating || 0,
+        ratingCount: b.ratingCount || 0,
+        publisher: b.publisher ?? "—",
+        publishDate: b.publishDate ?? "",
+        category: b.category ?? "General",
+        pdfLink: b.pdf_file || b.pdfLink || "#",
+        status: b.status || "UNKNOWN",
+        summary: b.longSummary || b.summary || b.description || "",
+        summaryIntro: b.summaryIntro || b.summary_intro || null,
+        summaryTail: b.summaryTail || b.summary_tail || null,
+        authorPhoto:
+          b.authorPhoto ||
+          b.author_image ||
+          b.authorImage ||
+          "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=240&h=240&fit=crop",
+        authorFollowers: Number(b.authorFollowers || b.followers || 16),
+        authorBio: b.authorBio || b.author_bio || b.authorStory || "",
+        audioSrc: pickAudio(b) || null, 
+        copies_available: b.copies_available || 0,
+        copies_total: b.copies_total || 0,
+        format: b.format || "HARD_COPY",
+        created_at: b.created_at || "",
+        updated_at: b.updated_at || "",
+      };
 
   // Fetch book details from API
-  useEffect(() => {
-    const fetchBookData = async () => {
+useEffect(() => {
+  const fetchBookData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const bookResponse = await api.get(`/book/retrieve/${id}`);
+      const book = bookResponse.data;
+
       try {
-        setLoading(true);
-        setError(null);
-
-        // Fetch book details
-        const bookResponse = await api.get(`/book/retrieve/${id}`);
-        const book = bookResponse.data;
-        
-        // Fetch review stats
-        try {
-          const statsResponse = await api.get(`/reviews/api/review/book/${id}/stats`);
-          setReviewStats(statsResponse.data);
-        } catch (err) {
-          console.log("No review stats available");
-          setReviewStats({ average_rating: 0, total_reviews: 0 });
-        }
-
-        // Fetch related books
-        const booksResponse = await api.get('/book/list');
-        const allBooks = booksResponse.data;
-
-        // Normalize current book
-        const normalizedBook = normalize(book);
-        console.log("Normalized book data:", normalizedBook);
-        console.log("Audio source:", normalizedBook.audioSrc);
-        setBookData(normalizedBook);
-        setAuthorFollowers(normalizedBook.authorFollowers);
-
-        // Get related books (exclude current book, take first 3)
-        const related = allBooks
-          .filter(b => b.id !== parseInt(id))
-          .slice(0, 3)
-          .map(normalize)
-          .filter(Boolean);
-        setRelatedBooks(related);
-
+        const statsResponse = await api.get(`/reviews/book/${id}/stats`);
+        setReviewStats(statsResponse.data);
       } catch (err) {
-        console.error("Error fetching book data:", err);
-        setError("Failed to load book details");
-      } finally {
-        setLoading(false);
+        console.log("No review stats available");
+        setReviewStats({ average_rating: 0, total_reviews: 0 });
       }
-    };
 
-    if (id) {
-      fetchBookData();
+      // ✅ Related books
+      const booksResponse = await api.get("/book/list");
+      const allBooks = booksResponse.data;
+
+      // Normalize current book
+      const normalizedBook = normalize(book);
+      console.log("Normalized book data:", normalizedBook);
+      console.log("Audio source:", normalizedBook.audioSrc);
+      setBookData(normalizedBook);
+      setAuthorFollowers(normalizedBook.authorFollowers);
+
+      // Get related books (exclude current book, take first 3)
+      const related = allBooks
+        .filter((b) => b.id !== parseInt(id))
+        .slice(0, 3)
+        .map(normalize)
+        .filter(Boolean);
+      setRelatedBooks(related);
+
+    } catch (err) {
+      console.error("Error fetching book data:", err);
+      setError("Failed to load book details");
+    } finally {
+      setLoading(false);
     }
-  }, [id]);
+  };
+
+  if (id) {
+    fetchBookData();
+  }
+}, [id]);
 
   // init votes when book changes
   useEffect(() => {
