@@ -9,6 +9,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 import AppLauncherMenu from "./AppLauncherMenu";
+import { useAuth } from "../../Providers/AuthProvider";
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -25,23 +26,7 @@ export default function Navbar() {
   const searchRef = useRef(null);
   const gridRef = useRef(null);
 
-  // Auth state
-  const [user, setUser] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem("authUser")) || null;
-    } catch {
-      return null;
-    }
-  });
-
-  useEffect(() => {
-    const handleStorage = () => {
-      const u = JSON.parse(localStorage.getItem("authUser"));
-      setUser(u);
-    };
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
-  }, []);
+  const { user, logout, isAuthenticated } = useAuth();
 
   // Load books for search
   useEffect(() => {
@@ -103,10 +88,8 @@ export default function Navbar() {
 
   // Login / Logout
   const toggleSignIn = () => {
-    if (user) {
-      localStorage.removeItem("authUser");
-      localStorage.removeItem("token");
-      setUser(null);
+    if (isAuthenticated) {
+      logout();
       setOpenUser(false);
       navigate("/");
     } else {
@@ -218,7 +201,7 @@ export default function Navbar() {
                   <div className="text-sm text-gray-600">
                     {user ? "Signed in as" : "Welcome"}
                   </div>
-                  <div className="font-semibold text-gray-800">{user?.name || "Guest"}</div>
+                  <div className="font-semibold text-gray-800">{user?.full_name || "Guest"}</div>
                   {user?.type === "admin" && (
                     <div className="text-xs text-red-500 mt-1 font-semibold">Admin</div>
                   )}
@@ -269,9 +252,8 @@ export default function Navbar() {
 
       {/* Search overlay */}
       <div
-        className={`transition-[max-height] duration-300 ease-out overflow-hidden border-t border-gray-100 ${
-          showSearch ? "max-h-80" : "max-h-0"
-        }`}
+        className={`transition-[max-height] duration-300 ease-out overflow-hidden border-t border-gray-100 ${showSearch ? "max-h-80" : "max-h-0"
+          }`}
       >
         <div className="mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <form

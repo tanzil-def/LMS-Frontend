@@ -25,41 +25,44 @@ import CalendarPage from "./pages/Calendar/CalendarPage";
 // Auth
 import AuthGate from "./pages/AuthGate/AuthGate";
 import Login from "./pages/Auth/Login";
+import Register from "./pages/Auth/Register";
+import Forgot from "./pages/Auth/Forgot";
 
 function App() {
   return (
-    <>
-      <Navbar />
-      <main className="flex-grow">
-        <Routes>
-          {/* Layout wrapper */}
-          <Route element={<Layout />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/book/:id" element={<BookDetails />} />
-            <Route path="/borrowed" element={<Borrowed />} />
-            <Route path="/fill-up-form" element={<FillUpForm />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/upload" element={<UploadBookPage />} />
-            <Route path="/all-genres" element={<AllGenres />} />
-            <Route path="/manage-books" element={<ManageBooks />} />
-            <Route path="/manage-category" element={<ManageCategory />} />
-            <Route path="/user" element={<UserDashboard />} />
-            <Route path="/loans" element={<MyLoansBlank />} />
-            <Route path="/settings" element={<UserSettings />} />
-            <Route path="/history" element={<UserHistory />} />
-            <Route path="/setting" element={<AdminSettings />} />
-            <Route path="/manage-feature" element={<ManageFeature />} />
-            <Route path="/donation-request" element={<DonationRequest />} />
-            <Route path="/authgate" element={<AuthGate />} />
-            <Route path="/calendar" element={<CalendarPage />} />
+    <main className="flex-grow">
+      <Routes>
+        {/* Auth Routes (Standalone) */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<Forgot />} />
 
-            {/* Redirect unknown paths */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Route>
-        </Routes>
-      </main>
-    </>
+        {/* Protected/Dashboard Routes (With Layout) */}
+        <Route element={<Layout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/book/:id" element={<BookDetails />} />
+          <Route path="/borrowed" element={<Borrowed />} />
+          <Route path="/fill-up-form" element={<FillUpForm />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/upload" element={<UploadBookPage />} />
+          <Route path="/all-genres" element={<AllGenres />} />
+          <Route path="/manage-books" element={<ManageBooks />} />
+          <Route path="/manage-category" element={<ManageCategory />} />
+          <Route path="/user" element={<UserDashboard />} />
+          <Route path="/loans" element={<MyLoansBlank />} />
+          <Route path="/settings" element={<UserSettings />} />
+          <Route path="/history" element={<UserHistory />} />
+          <Route path="/setting" element={<AdminSettings />} />
+          <Route path="/manage-feature" element={<ManageFeature />} />
+          <Route path="/donation-request" element={<DonationRequest />} />
+          <Route path="/authgate" element={<AuthGate />} />
+          <Route path="/calendar" element={<CalendarPage />} />
+
+          {/* Redirect unknown paths to home (which is now under Layout) */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
+    </main>
   );
 }
 
