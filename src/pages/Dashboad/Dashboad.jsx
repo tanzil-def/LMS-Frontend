@@ -14,14 +14,16 @@ import {
   XCircle,
   Mail,
 } from "lucide-react";
-import { Link } from "react-router-dom";
 import Sidebar from "../../components/DashboardSidebar/DashboardSidebar";
 import api from "../../api";
+import { useAuth } from "../../Providers/AuthProvider";
 
 export default function Dashboard() {
+  const { user } = useAuth();
+
   useEffect(() => {
-    document.title = "Library Dashboard";
-  }, []);
+    document.title = user ? `${user.full_name}'s Dashboard` : "Library Dashboard";
+  }, [user]);
 
   const [stats, setStats] = useState({
     borrowed_copies: 0,
@@ -41,15 +43,15 @@ export default function Dashboard() {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
-        
+
         // Fetch stats
         const statsResponse = await api.get("/borrow/stats");
         setStats({
-          borrowed_copies: statsResponse.data.activeBorrows,  
+          borrowed_copies: statsResponse.data.activeBorrows,
           returned_copies: statsResponse.data.returnedBorrows,
           pending_copies: statsResponse.data.totalBorrows - statsResponse.data.returnedBorrows,
-          total_copies: statsResponse.data.totalBorrows, 
-          available_copies: statsResponse.data.totalBorrows - statsResponse.data.activeBorrows, 
+          total_copies: statsResponse.data.totalBorrows,
+          available_copies: statsResponse.data.totalBorrows - statsResponse.data.activeBorrows,
         });
 
         // Fetch pending requests
@@ -83,13 +85,13 @@ export default function Dashboard() {
   ];
 
   // Confirmation modal state - UPDATED
-  const [confirm, setConfirm] = useState({ 
-    open: false, 
-    type: null, 
-    index: -1, 
-    id: null, 
-    user_id: null, 
-    book_id: null 
+  const [confirm, setConfirm] = useState({
+    open: false,
+    type: null,
+    index: -1,
+    id: null,
+    user_id: null,
+    book_id: null
   });
 
   const openConfirm = (type, index, borrow) => {
@@ -103,13 +105,13 @@ export default function Dashboard() {
     });
   };
 
-  const closeConfirm = () => setConfirm({ 
-    open: false, 
-    type: null, 
-    index: -1, 
-    id: null, 
-    user_id: null, 
-    book_id: null 
+  const closeConfirm = () => setConfirm({
+    open: false,
+    type: null,
+    index: -1,
+    id: null,
+    user_id: null,
+    book_id: null
   });
 
   // Toast (2s)
@@ -122,7 +124,7 @@ export default function Dashboard() {
   // Handle accept/reject borrow request - UPDATED
   const doConfirm = async () => {
     const { type, index, id, user_id, book_id } = confirm;
-    
+
     if (index < 0 || !id || !user_id || !book_id) {
       console.log("Invalid confirm state:", confirm);
       return;
@@ -136,19 +138,19 @@ export default function Dashboard() {
 
       // Remove from local state
       setRequests(prev => prev.filter((_, i) => i !== index));
-      
+
       showToast(type, type === "accept" ? "Request accepted successfully" : "Request rejected successfully");
 
       // Refresh stats
       const statsResponse = await api.get("/borrow/stats");
       setStats({
-        borrowed_copies: statsResponse.data.activeBorrows,  
+        borrowed_copies: statsResponse.data.activeBorrows,
         returned_copies: statsResponse.data.returnedBorrows,
-        pending_copies: statsResponse.data.pendingBorrows || 
-                  (statsResponse.data.totalBorrows - statsResponse.data.activeBorrows - statsResponse.data.returnedBorrows),
-        total_copies: statsResponse.data.totalBorrows, 
-        available_copies: statsResponse.data.totalBorrows - 
-                    (statsResponse.data.activeBorrows + statsResponse.data.pendingBorrows || 0),
+        pending_copies: statsResponse.data.pendingBorrows ||
+          (statsResponse.data.totalBorrows - statsResponse.data.activeBorrows - statsResponse.data.returnedBorrows),
+        total_copies: statsResponse.data.totalBorrows,
+        available_copies: statsResponse.data.totalBorrows -
+          (statsResponse.data.activeBorrows + statsResponse.data.pendingBorrows || 0),
       });
 
     } catch (err) {
@@ -245,8 +247,8 @@ export default function Dashboard() {
           <div className="text-center text-red-600">
             <AlertTriangle className="w-16 h-16 mx-auto mb-4" />
             <p className="text-lg">{error}</p>
-            <button 
-              onClick={() => window.location.reload()} 
+            <button
+              onClick={() => window.location.reload()}
               className="mt-4 px-4 py-2 bg-sky-600 text-white rounded hover:bg-sky-700"
             >
               Retry
@@ -530,11 +532,10 @@ export default function Dashboard() {
                 <button
                   type="button"
                   onClick={doConfirm}
-                  className={`rounded-md px-4 py-2 text-sm font-semibold text-white ${
-                    confirm.type === "accept"
+                  className={`rounded-md px-4 py-2 text-sm font-semibold text-white ${confirm.type === "accept"
                       ? "bg-green-600 hover:bg-green-500 focus:ring-2 focus:ring-green-400"
                       : "bg-red-600 hover:bg-red-500 focus:ring-2 focus:ring-red-400"
-                  }`}
+                    }`}
                 >
                   {confirm.type === "accept" ? "Confirm" : "Reject"}
                 </button>
